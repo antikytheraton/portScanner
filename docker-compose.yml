@@ -1,0 +1,39 @@
+version: "3.7"
+
+volumes:
+    portscannervolume:
+        name: scanner-volume
+
+networks:
+    portscannernetwork:
+        name: scanner-network
+
+services:
+    pg:
+        image: postgres:12.0
+        restart: on-failure
+        env_file:
+            - .env
+        ports:
+            - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+        volumes:
+            - ./db/scripts:/docker-entrypoint-initdb.d/
+            - portscannervolume:/var/lib/postgresql/data
+        networks:
+            - portscannernetwork
+    portscanner_api:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - pg
+        volumes:
+            - ./:/app
+        ports:
+            - 7777:7777
+        networks:
+            - portscannernetwork
+        env_file:
+            - .env
+        entrypoint: ["/bin/bash","./scripts/entrypoint.dev.sh"]
+
